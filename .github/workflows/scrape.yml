@@ -21,20 +21,23 @@ jobs:
     - name: Install dependencies
       run: pip install -r requirements.txt
 
-    - name: Set up Chrome
+    - name: Install Google Chrome
       run: |
         sudo apt update
-        sudo apt install -y wget unzip xvfb
-        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        sudo dpkg -i google-chrome-stable_current_amd64.deb || sudo apt -f install -y
+        sudo apt install -y wget gnupg2
+        wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+        echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main' | sudo tee /etc/apt/sources.list.d/google-chrome.list
+        sudo apt update
         sudo apt install -y google-chrome-stable
 
-    - name: Set up ChromeDriver
+    - name: Install matching ChromeDriver
       run: |
         CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+\.\d+')
-        wget -q "https://chromedriver.storage.googleapis.com/$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip"
+        CHROME_MAJOR=$(echo $CHROME_VERSION | cut -d. -f1)
+        DRIVER_VERSION=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAJOR)
+        wget -q "https://chromedriver.storage.googleapis.com/${DRIVER_VERSION}/chromedriver_linux64.zip"
         unzip chromedriver_linux64.zip
-        sudo mv chromedriver /usr/local/bin/
+        sudo mv chromedriver /usr/local/bin/chromedriver
         sudo chmod +x /usr/local/bin/chromedriver
 
     - name: Run scraper
